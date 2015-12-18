@@ -97,6 +97,7 @@ type ParseContext struct {
 	peek            []*Token
 	argi            int // Index of current command-line arg we're processing.
 	args            []string
+	rawArgs         []string
 	flags           *flagGroup
 	arguments       *argGroup
 	argumenti       int // Cursor into arguments
@@ -130,6 +131,7 @@ func tokenize(args []string, ignoreDefault bool) *ParseContext {
 	return &ParseContext{
 		ignoreDefault: ignoreDefault,
 		args:          args,
+		rawArgs:       args,
 		flags:         newFlagGroup(),
 		arguments:     newArgGroup(),
 	}
