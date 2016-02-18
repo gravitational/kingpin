@@ -687,7 +687,7 @@ func (a *Application) completionOptions(context *ParseContext) []string {
 		options, flagMatched, valueMatched := target.FlagCompletion(flagName, flagValue)
 		if valueMatched {
 			// Value Matched. Show cmdCompletions
-			return target.CmdCompletion()
+			return target.CmdCompletion(context)
 		}
 
 		// Add top level flags if we're not at the top level and no match was found.
@@ -695,7 +695,7 @@ func (a *Application) completionOptions(context *ParseContext) []string {
 			topOptions, topFlagMatched, topValueMatched := a.FlagCompletion(flagName, flagValue)
 			if topValueMatched {
 				// Value Matched. Back to cmdCompletions
-				return target.CmdCompletion()
+				return target.CmdCompletion(context)
 			}
 
 			if topFlagMatched {
@@ -710,7 +710,7 @@ func (a *Application) completionOptions(context *ParseContext) []string {
 	}
 
 	// Perform completion for sub commands and arguments.
-	return target.CmdCompletion()
+	return target.CmdCompletion(context)
 }
 
 func (a *Application) generateBashCompletion(context *ParseContext) {
