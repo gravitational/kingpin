@@ -302,6 +302,7 @@ loop:
 			if flag, err := context.flags.parse(context); err != nil {
 				if !ignoreDefault {
 					if cmd := cmds.defaultSubcommand(); cmd != nil {
+						cmd.completionAlts = cmds.cmdNames()
 						context.matchedCmd(cmd)
 						cmds = cmd.cmdGroup
 						break
@@ -319,6 +320,7 @@ loop:
 				if !ok {
 					if !ignoreDefault {
 						if cmd = cmds.defaultSubcommand(); cmd != nil {
+							cmd.completionAlts = cmds.cmdNames()
 							selectedDefault = true
 						}
 					}
@@ -329,6 +331,7 @@ loop:
 				if cmd == HelpCommand {
 					ignoreDefault = true
 				}
+				cmd.completionAlts = nil
 				context.matchedCmd(cmd)
 				cmds = cmd.cmdGroup
 				if !selectedDefault {
@@ -362,6 +365,7 @@ loop:
 	// Move to innermost default command.
 	for !ignoreDefault {
 		if cmd := cmds.defaultSubcommand(); cmd != nil {
+			cmd.completionAlts = cmds.cmdNames()
 			context.matchedCmd(cmd)
 			cmds = cmd.cmdGroup
 		} else {
