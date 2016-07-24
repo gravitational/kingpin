@@ -30,7 +30,8 @@ type Application struct {
 
 	author         string
 	version        string
-	writer         io.Writer // Destination for usage and errors.
+	errorWriter    io.Writer // Destination for errors.
+	usageWriter    io.Writer // Destination for usage
 	usageTemplate  string
 	validator      ApplicationValidator
 	terminate      func(status int) // See Terminate()
@@ -52,7 +53,8 @@ func New(name, help string) *Application {
 	a := &Application{
 		Name:          name,
 		Help:          help,
-		writer:        os.Stderr,
+		errorWriter:   os.Stderr, // Left for backwards compatibility purposes.
+		usageWriter:   os.Stderr,
 		usageTemplate: DefaultUsageTemplate,
 		terminate:     os.Exit,
 	}
@@ -133,9 +135,23 @@ func (a *Application) AllRepeatable(repeatable bool) *Application {
 	return a
 }
 
-// Specify the writer to use for usage and errors. Defaults to os.Stderr.
+// Writer specifies the writer to use for usage and errors. Defaults to os.Stderr.
+// DEPRECATED: See ErrorWriter and UsageWriter.
 func (a *Application) Writer(w io.Writer) *Application {
-	a.writer = w
+	a.errorWriter = w
+	a.usageWriter = w
+	return a
+}
+
+// ErrorWriter sets the io.Writer to use for errors.
+func (a *Application) ErrorWriter(w io.Writer) *Application {
+	a.usageWriter = w
+	return a
+}
+
+// UsageWriter sets the io.Writer to use for errors.
+func (a *Application) UsageWriter(w io.Writer) *Application {
+	a.usageWriter = w
 	return a
 }
 
@@ -227,7 +243,9 @@ func (a *Application) writeUsage(context *ParseContext, err error) {
 	if err := a.UsageForContext(context); err != nil {
 		panic(err)
 	}
-	a.terminate(1)
+	if err != nil {
+		a.terminate(1)
+	}
 }
 
 func (a *Application) maybeHelp(context *ParseContext) {
@@ -244,7 +262,7 @@ func (a *Application) maybeHelp(context *ParseContext) {
 func (a *Application) Version(version string) *Application {
 	a.version = version
 	a.VersionFlag = a.Flag("version", "Show application version.").PreAction(func(*ParseContext) error {
-		fmt.Fprintln(a.writer, version)
+		fmt.Fprintln(a.usageWriter, version)
 		a.terminate(0)
 		return nil
 	})
@@ -252,6 +270,7 @@ func (a *Application) Version(version string) *Application {
 	return a
 }
 
+// Author sets the author output by some help templates.
 func (a *Application) Author(author string) *Application {
 	a.author = author
 	return a
@@ -577,7 +596,7 @@ func (a *Application) applyActions(context *ParseContext) error {
 
 // Errorf prints an error message to w in the format "<appname>: error: <message>".
 func (a *Application) Errorf(format string, args ...interface{}) {
-	fmt.Fprintf(a.writer, a.Name+": error: "+format+"\n", args...)
+	fmt.Fprintf(a.errorWriter, a.Name+": error: "+format+"\n", args...)
 }
 
 // Fatalf writes a formatted error to w then terminates with exit status 1.
@@ -590,6 +609,8 @@ func (a *Application) Fatalf(format string, args ...interface{}) {
 // exits with a non-zero status.
 func (a *Application) FatalUsage(format string, args ...interface{}) {
 	a.Errorf(format, args...)
+	// Force usage to go to error output.
+	a.usageWriter = a.errorWriter
 	a.Usage([]string{})
 	a.terminate(1)
 }
@@ -667,7 +688,7 @@ func (a *Application) completionOptions(context *ParseContext) []string {
 		}
 
 		// Add top level flags if we're not at the top level and no match was found.
-		if context.SelectedCommand != nil && flagMatched == false {
+		if context.SelectedCommand != nil && !flagMatched {
 			topOptions, topFlagMatched, topValueMatched := a.FlagCompletion(flagName, flagValue)
 			if topValueMatched {
 				// Value Matched. Back to cmdCompletions
