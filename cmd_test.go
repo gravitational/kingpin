@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/alecthomas/assert"
+	"github.com/stretchr/testify/assert"
 
 	"testing"
 )
