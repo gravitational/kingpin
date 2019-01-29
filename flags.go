@@ -56,6 +56,9 @@ func (f *flagGroup) checkDuplicates() error {
 	seenShort := map[rune]bool{}
 	seenLong := map[string]bool{}
 	for _, flag := range f.flagOrder {
+		if flag.allowDuplicate {
+			continue
+		}
 		if flag.shorthand != 0 {
 			if _, ok := seenShort[flag.shorthand]; ok {
 				return fmt.Errorf("duplicate short flag -%c", flag.shorthand)
@@ -155,6 +158,9 @@ type FlagClause struct {
 	placeholder   string
 	hidden        bool
 	setByUser     *bool
+
+	// allowDuplicate allows this flag to be repeated.
+	allowDuplicate bool
 }
 
 func newFlag(name, help string) *FlagClause {
@@ -214,6 +220,12 @@ func (f *FlagClause) init() error {
 		return fmt.Errorf("invalid default for '--%s', expecting single value", f.name)
 	}
 	return nil
+}
+
+// AllowDuplicate allows this flag to be repeated.
+func (f *FlagClause) AllowDuplicate() *FlagClause {
+	f.allowDuplicate = true
+	return f
 }
 
 // Dispatch to the given function after the flag is parsed and validated.
