@@ -112,6 +112,8 @@ loop:
 
 			context.Next()
 
+			flag.isSetByUser()
+
 			fb, ok := flag.value.(boolFlag)
 			if ok && fb.IsBoolFlag() {
 				if invert {
@@ -155,6 +157,7 @@ type FlagClause struct {
 	defaultValues []string
 	placeholder   string
 	hidden        bool
+	setByUser     *bool
 
 	// allowDuplicate allows this flag to be repeated.
 	allowDuplicate bool
@@ -193,6 +196,12 @@ func (f *FlagClause) setDefault() error {
 	}
 
 	return nil
+}
+
+func (f *FlagClause) isSetByUser() {
+	if f.setByUser != nil {
+		*f.setByUser = true
+	}
 }
 
 func (f *FlagClause) needsValue() bool {
@@ -256,6 +265,15 @@ func (a *FlagClause) Enum(options ...string) (target *string) {
 		return options
 	})
 	return a.parserMixin.Enum(options...)
+}
+
+// IsSetByUser let to know if the flag was set by the user
+func (f *FlagClause) IsSetByUser(setByUser *bool) *FlagClause {
+	if setByUser != nil {
+		*setByUser = false
+	}
+	f.setByUser = setByUser
+	return f
 }
 
 // Default values for this flag. They *must* be parseable by the value of the flag.
