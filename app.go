@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 var (
@@ -33,6 +34,7 @@ type Application struct {
 	errorWriter    io.Writer // Destination for errors.
 	usageWriter    io.Writer // Destination for usage
 	usageTemplate  string
+	usageFuncs     template.FuncMap
 	validator      ApplicationValidator
 	terminate      func(status int) // See Terminate()
 	allRepeatable  bool             // can all flags be repeated? default false, UNIX convention is true.
@@ -159,6 +161,12 @@ func (a *Application) UsageWriter(w io.Writer) *Application {
 // information. The default is UsageTemplate.
 func (a *Application) UsageTemplate(template string) *Application {
 	a.usageTemplate = template
+	return a
+}
+
+// UsageFuncs adds extra functions that can be used in the usage template.
+func (a *Application) UsageFuncs(funcs template.FuncMap) *Application {
+	a.usageFuncs = funcs
 	return a
 }
 
