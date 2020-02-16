@@ -154,7 +154,7 @@ func (a *Application) UsageForContextWithTemplate(context *ParseContext, indent 
 			haveShort := shortFlagsPresent(f)
 			for _, flag := range f {
 				if !flag.Hidden {
-					rows = append(rows, [2]string{formatFlag(haveShort, flag), flag.Help})
+					rows = append(rows, [2]string{formatFlag(haveShort, flag), flag.HelpWithEnvar()})
 				}
 			}
 			return rows
@@ -190,7 +190,7 @@ func (a *Application) UsageForContextWithTemplate(context *ParseContext, indent 
 					if !arg.Required {
 						s = "[" + s + "]"
 					}
-					rows = append(rows, [2]string{s, arg.Help})
+					rows = append(rows, [2]string{s, arg.HelpWithEnvar()})
 				}
 			}
 			return rows
