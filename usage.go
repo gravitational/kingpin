@@ -6,8 +6,7 @@ import (
 	"go/doc"
 	"io"
 	"strings"
-
-	"github.com/alecthomas/template"
+	"text/template"
 )
 
 var (
@@ -208,6 +207,22 @@ func (a *Application) UsageForContextWithTemplate(context *ParseContext, indent 
 			return string(c)
 		},
 	}
+
+	// kingpin originally uses "github.com/alecthomas/template" which is a fork
+	// of go 1.4's "text/template" with one additional feature to remove
+	// newlines after "}}\".
+	//
+	// "text/template" is added back in this file to utilize the latest
+	// features of go. To be backwards compatible with "}}\" in existing
+	// templates, "}}\" is replaced with " -}}" to remove the new lines.
+	//
+	// One side effect of " -}}" is it may swallow extra whitespaces on the
+	// next line, where "}}\" will keep them. To make sure the behavior is the
+	// same as before, an action block {{" "}} is used to replace the first
+	// space of the next line to stop the swallowing.
+	tmpl = strings.ReplaceAll(tmpl, "}}\\\n ", " -}}\n{{\" \"}}")
+	tmpl = strings.ReplaceAll(tmpl, "}}\\\n", " -}}\n")
+
 	t, err := template.New("usage").Funcs(funcs).Parse(tmpl)
 	if err != nil {
 		return err
