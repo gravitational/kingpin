@@ -420,7 +420,7 @@ func (a *Application) validateRequired(context *ParseContext) error {
 	// Check required flags and set defaults.
 	var missingFlags []*FlagClause
 
-	for _, flag := range context.flags.long {
+	for _, flag := range context.flags.flagOrder {
 		if flagElements[flag.name] == nil {
 			// Check required flags were provided.
 			if flag.needsValue() {
