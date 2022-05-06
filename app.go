@@ -516,17 +516,36 @@ func (a *Application) validateRequired(context *ParseContext) error {
 	}
 
 	// Check required flags and set defaults.
-	var missingFlags []string
-	for _, flag := range context.flags.long {
+	var missingFlags []*FlagClause
+
+	for _, flag := range context.flags.flagOrder {
 		if flagElements[flag.name] == nil {
 			// Check required flags were provided.
 			if flag.needsValue() {
-				missingFlags = append(missingFlags, fmt.Sprintf("'--%s'", flag.name))
+				missingFlags = append(missingFlags, flag)
 			}
 		}
 	}
-	if len(missingFlags) != 0 {
-		return fmt.Errorf("required flag(s) %s not provided", strings.Join(missingFlags, ", "))
+
+	if len(missingFlags) > 0 {
+		fmtFlag := func(flag *FlagClause) string {
+			if flag.shorthand != 0 {
+				return fmt.Sprintf("--%s/-%c", flag.name, flag.shorthand)
+			} else {
+				return fmt.Sprintf("--%s", flag.name)
+			}
+		}
+
+		if len(missingFlags) == 1 {
+			flag := missingFlags[0]
+			return fmt.Errorf("required flag %v not provided", fmtFlag(flag))
+		}
+
+		var flags []string
+		for _, flag := range missingFlags {
+			flags = append(flags, fmtFlag(flag))
+		}
+		return fmt.Errorf("required flags %v not provided", flags)
 	}
 
 	for _, arg := range context.arguments.args {
