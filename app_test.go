@@ -36,8 +36,39 @@ func TestRequiredFlags(t *testing.T) {
 
 	_, err := c.Parse([]string{"--a=foo"})
 	assert.Error(t, err)
+	assert.Equal(t, "required flag --b not provided", err.Error())
 	_, err = c.Parse([]string{"--b=foo"})
 	assert.NoError(t, err)
+}
+
+func TestRequiredFlagsErrors(t *testing.T) {
+	c := newTestApp()
+	c.Flag("c", "c").Required().String()
+	c.Flag("b", "b").Required().String()
+	c.Flag("a", "a").Required().String()
+
+	_, err := c.Parse([]string{"--a=foo", "--b=foo", "--c=foo"})
+	assert.NoError(t, err)
+
+	// ensure the flag order is preserved and all missing flags are reported.
+	_, err = c.Parse([]string{})
+	assert.Error(t, err)
+	assert.Equal(t, "required flags [--c --b --a] not provided", err.Error())
+}
+
+func TestRequiredShorthandFlagsErrors(t *testing.T) {
+	c := newTestApp()
+	c.Flag("foo", "c").Short('c').Required().String()
+	c.Flag("bar", "b").Short('b').Required().String()
+	c.Flag("baz", "a").Short('a').Required().String()
+
+	_, err := c.Parse([]string{"--foo=foo", "--bar=foo", "--baz=foo"})
+	assert.NoError(t, err)
+
+	// ensure the flag order is preserved and all missing flags are reported.
+	_, err = c.Parse([]string{})
+	assert.Error(t, err)
+	assert.Equal(t, "required flags [--foo/-c --bar/-b --baz/-a] not provided", err.Error())
 }
 
 func TestRepeatableFlags(t *testing.T) {
