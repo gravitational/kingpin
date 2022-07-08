@@ -2,6 +2,7 @@ package kingpin
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -37,6 +38,10 @@ func (t TokenType) String() string {
 
 var (
 	TokenEOLMarker = Token{-1, TokenEOL, ""}
+)
+
+var (
+	ErrExpectedCommand = errors.New("expected command")
 )
 
 type Token struct {
@@ -332,7 +337,7 @@ loop:
 						}
 					}
 					if cmd == nil {
-						return fmt.Errorf("expected command but got %q", token)
+						return fmt.Errorf("%w but got %q", ErrExpectedCommand, token)
 					}
 				}
 				if cmd == HelpCommand {
