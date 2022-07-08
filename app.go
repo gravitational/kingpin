@@ -106,6 +106,7 @@ func (a *Application) Terminate(terminate func(int)) *Application {
 }
 
 // AllRepeatable specifies if all flags should be treated as repeatable. Default is false, true is UNIX convention.
+// UNIX convention means that all flags can be repeated, but the last value of flag is used.
 func (a *Application) AllRepeatable(repeatable bool) *Application {
 	a.allRepeatable = repeatable
 	return a
