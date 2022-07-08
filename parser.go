@@ -38,6 +38,10 @@ var (
 	TokenEOLMarker = Token{-1, TokenEOL, ""}
 )
 
+var (
+	ErrExpectedCommand = fmt.Errorf("expected command")
+)
+
 type Token struct {
 	Index int
 	Type  TokenType
@@ -316,7 +320,7 @@ loop:
 						}
 					}
 					if cmd == nil {
-						return fmt.Errorf("expected command but got %q", token)
+						return fmt.Errorf("%w but got %q", ErrExpectedCommand, token)
 					}
 				}
 				if cmd == HelpCommand {
