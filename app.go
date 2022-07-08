@@ -36,6 +36,7 @@ type Application struct {
 	usageTemplate  string
 	validator      ApplicationValidator
 	terminate      func(status int) // See Terminate()
+	allRepeatable  bool             // can all flags be repeated? default false, UNIX convention is true.
 	noInterspersed bool             // can flags be interspersed with args (or must they come first)
 	defaultEnvars  bool
 
@@ -101,6 +102,12 @@ func (a *Application) Terminate(terminate func(int)) *Application {
 		terminate = func(int) {}
 	}
 	a.terminate = terminate
+	return a
+}
+
+// AllRepeatable specifies if all flags should be treated as repeatable. Default is false, true is UNIX convention.
+func (a *Application) AllRepeatable(repeatable bool) *Application {
+	a.allRepeatable = repeatable
 	return a
 }
 
@@ -469,9 +476,11 @@ func (a *Application) setValues(context *ParseContext) (selected []string, err e
 	for _, element := range context.Elements {
 		switch clause := element.Clause.(type) {
 		case *FlagClause:
-			if _, ok := flagSet[clause.name]; ok {
-				if v, ok := clause.value.(repeatableFlag); !ok || !v.IsCumulative() {
-					return nil, fmt.Errorf("flag '%s' cannot be repeated", clause.name)
+			if !a.allRepeatable {
+				if _, ok := flagSet[clause.name]; ok {
+					if v, ok := clause.value.(repeatableFlag); !ok || !v.IsCumulative() {
+						return nil, fmt.Errorf("flag '%s' cannot be repeated", clause.name)
+					}
 				}
 			}
 			if err = clause.value.Set(*element.Value); err != nil {

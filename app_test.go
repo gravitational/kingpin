@@ -2,11 +2,10 @@ package kingpin
 
 import (
 	"io/ioutil"
-
-	"github.com/alecthomas/assert"
-
 	"testing"
 	"time"
+
+	"github.com/alecthomas/assert"
 )
 
 func newTestApp() *Application {
@@ -77,6 +76,12 @@ func TestRepeatableFlags(t *testing.T) {
 	c.Flag("b", "b").Strings()
 	_, err := c.Parse([]string{"--a=foo", "--a=bar"})
 	assert.Error(t, err)
+	_, err = c.Parse([]string{"--b=foo", "--b=bar"})
+	assert.NoError(t, err)
+
+	c.AllRepeatable(true)
+	_, err = c.Parse([]string{"--a=foo", "--a=bar"})
+	assert.NoError(t, err)
 	_, err = c.Parse([]string{"--b=foo", "--b=bar"})
 	assert.NoError(t, err)
 }
