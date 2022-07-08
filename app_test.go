@@ -72,7 +72,7 @@ func TestRequiredShorthandFlagsErrors(t *testing.T) {
 
 func TestRepeatableFlags(t *testing.T) {
 	c := newTestApp()
-	c.Flag("a", "a").String()
+	aflag := c.Flag("a", "a").String()
 	c.Flag("b", "b").Strings()
 	_, err := c.Parse([]string{"--a=foo", "--a=bar"})
 	assert.Error(t, err)
@@ -82,6 +82,7 @@ func TestRepeatableFlags(t *testing.T) {
 	c.AllRepeatable(true)
 	_, err = c.Parse([]string{"--a=foo", "--a=bar"})
 	assert.NoError(t, err)
+	assert.Equal(t, *aflag, "bar")
 	_, err = c.Parse([]string{"--b=foo", "--b=bar"})
 	assert.NoError(t, err)
 }
