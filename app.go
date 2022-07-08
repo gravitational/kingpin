@@ -1,6 +1,7 @@
 package kingpin
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	ErrCommandNotSpecified = fmt.Errorf("command not specified")
+	ErrCommandNotSpecified = errors.New("command not specified")
 )
 
 var (

@@ -2,6 +2,7 @@ package kingpin
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -39,7 +40,7 @@ var (
 )
 
 var (
-	ErrExpectedCommand = fmt.Errorf("expected command")
+	ErrExpectedCommand = errors.New("expected command")
 )
 
 type Token struct {
