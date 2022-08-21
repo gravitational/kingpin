@@ -1,6 +1,7 @@
 package kingpin
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -106,11 +107,18 @@ loop:
 				}
 				flag, ok = f.long[name]
 				if !ok {
-					return nil, fmt.Errorf("unknown long flag '%s'", flagToken)
+					errMsg := fmt.Sprintf("unknown long flag '%s'", flagToken)
+					closestMath := findClosestFlagMatch(f.long, flagToken)
+					if closestMath != "" {
+						errMsg += fmt.Sprintf(". Did you mean --%s?", closestMath)
+					}
+					return nil, errors.New(errMsg)
 				}
 			} else {
 				flag, ok = f.short[name]
 				if !ok {
+					// Skip "closest option matching". With only one letter we won't
+					// get any meaningful results.
 					return nil, fmt.Errorf("unknown short flag '%s'", flagToken)
 				}
 			}
@@ -146,6 +154,15 @@ loop:
 		}
 	}
 	return nil, nil
+}
+
+func findClosestFlagMatch(fg map[string]*FlagClause, flagToken *Token) string {
+	options := make([]string, 0, len(fg))
+	for k, _ := range fg {
+		options = append(options, k)
+	}
+	closestMath := GetClosestMatch(flagToken.Value, options, 3)
+	return closestMath
 }
 
 func (f *flagGroup) visibleFlags() int {

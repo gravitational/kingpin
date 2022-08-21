@@ -156,6 +156,12 @@ func (a *Application) parseContext(ignoreDefault bool, args []string) (*ParseCon
 func (a *Application) Parse(args []string) (command string, err error) {
 	context, err := a.ParseContext(args)
 	if err != nil {
+		if errors.Is(err, ErrExpectedCommand) {
+			closesMatch := findClosesOption(a, context)
+			if closesMatch != "" {
+				err = fmt.Errorf("%w. Did you mean %s?\n", err, closesMatch)
+			}
+		}
 		return "", err
 	}
 	a.maybeHelp(context)
@@ -167,6 +173,18 @@ func (a *Application) Parse(args []string) (command string, err error) {
 		a.writeUsage(context, nil)
 	}
 	return command, err
+}
+
+func findClosesOption(a *Application, context *ParseContext) string {
+	cmds := make([]string, 0, len(a.commands))
+	closesMatch := ""
+	if context.Peek() != nil {
+		for cmd, _ := range a.commands {
+			cmds = append(cmds, cmd)
+		}
+		closesMatch = GetClosestMatch(context.Peek().Value, cmds, 3)
+	}
+	return closesMatch
 }
 
 func (a *Application) writeUsage(context *ParseContext, err error) {
