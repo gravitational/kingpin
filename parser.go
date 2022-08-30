@@ -333,7 +333,12 @@ loop:
 					context.Next()
 				}
 			} else if context.arguments.have() {
-				if app.noInterspersed {
+				if context.SelectedCommand != nil {
+					if context.SelectedCommand.noInterspersed {
+						// no more flags
+						context.argsOnly = true
+					}
+				} else if app.noInterspersed {
 					// no more flags
 					context.argsOnly = true
 				}
