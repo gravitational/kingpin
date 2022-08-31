@@ -1,7 +1,6 @@
 package kingpin
 
 import (
-	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -245,57 +244,6 @@ func TestInterspersedTrue(t *testing.T) {
 		assert.Equal(t, "a1", *a1)
 		assert.Equal(t, "", *a2)
 		assert.Equal(t, "flag", *f1)
-	}
-}
-
-func TestCommandInterspersed(t *testing.T) {
-	for _, appDefault := range []bool{true, false} {
-		t.Run(fmt.Sprintf("app interspersed %v", appDefault), func(t *testing.T) {
-			app := newTestApp().Interspersed(appDefault)
-
-			tests := []struct {
-				name               string
-				cmd                *CmdClause
-				expectInterspersed bool
-			}{
-				{
-					name:               "command inherit app default",
-					cmd:                app.Command("aa", ""),
-					expectInterspersed: appDefault,
-				},
-				{
-					name:               "command overwrite true",
-					cmd:                app.Command("bb", "").Interspersed(true),
-					expectInterspersed: true,
-				},
-				{
-					name:               "command overwrite false",
-					cmd:                app.Command("cc", "").Interspersed(false),
-					expectInterspersed: false,
-				},
-			}
-
-			for _, test := range tests {
-				t.Run(test.name, func(t *testing.T) {
-					// Use strings "args" to swallow all flags after it, when NOT interspersed.
-					args := test.cmd.Arg("args", "").Strings()
-					flag := test.cmd.Flag("flag", "").String()
-
-					_, err := app.Parse([]string{test.cmd.Name(), "a1", "--flag=flag", "a2"})
-					assert.NoError(t, err)
-
-					if test.expectInterspersed {
-						// Interspersed is true so flag is parsed properly.
-						assert.Equal(t, []string{"a1", "a2"}, *args)
-						assert.Equal(t, "flag", *flag)
-					} else {
-						// Interspersed is false so flag is part of args.
-						assert.Equal(t, []string{"a1", "--flag=flag", "a2"}, *args)
-						assert.Equal(t, "", *flag)
-					}
-				})
-			}
-		})
 	}
 }
 
