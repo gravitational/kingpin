@@ -103,24 +103,33 @@ type CmdClause struct {
 	*flagGroup
 	*argGroup
 	*cmdGroup
-	app       *Application
-	name      string
-	aliases   []string
-	help      string
-	isDefault bool
-	validator CmdClauseValidator
-	hidden    bool
+	app            *Application
+	name           string
+	aliases        []string
+	help           string
+	isDefault      bool
+	validator      CmdClauseValidator
+	hidden         bool
+	noInterspersed bool
 }
 
 func newCommand(app *Application, name, help string) *CmdClause {
 	c := &CmdClause{
-		flagGroup: newFlagGroup(),
-		argGroup:  newArgGroup(),
-		cmdGroup:  newCmdGroup(app),
-		app:       app,
-		name:      name,
-		help:      help,
+		flagGroup:      newFlagGroup(),
+		argGroup:       newArgGroup(),
+		cmdGroup:       newCmdGroup(app),
+		app:            app,
+		name:           name,
+		help:           help,
+		noInterspersed: app.noInterspersed,
 	}
+	return c
+}
+
+// Interspersed control if flags can be interspersed with positional arguments.
+// This overwrites the application default.
+func (c *CmdClause) Interspersed(interspersed bool) *CmdClause {
+	c.noInterspersed = !interspersed
 	return c
 }
 
