@@ -425,6 +425,10 @@ func (a *Application) setDefaults(context *ParseContext) error {
 			if flag.name == "help" {
 				return nil
 			}
+
+			if flag.name == "version" {
+				return nil
+			}
 			flagElements[flag.name] = element
 		}
 	}
