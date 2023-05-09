@@ -1,0 +1,28 @@
+name: Unit Tests (Go)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+# Remove after converting to module
+env:
+  GO111MODULE: auto
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+      - name: Install dependencies
+        run: go get -t ./...
+      - name: Run tests
+        run: go test ./...
