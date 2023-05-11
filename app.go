@@ -14,7 +14,7 @@ var (
 )
 
 var (
-	envarTransformRegexp = regexp.MustCompile(`[^a-zA-Z_]+`)
+	envarTransformRegexp = regexp.MustCompile(`[^a-zA-Z0-9_]+`)
 )
 
 type ApplicationValidator func(*Application) error
@@ -145,7 +145,7 @@ func (a *Application) Writer(w io.Writer) *Application {
 
 // ErrorWriter sets the io.Writer to use for errors.
 func (a *Application) ErrorWriter(w io.Writer) *Application {
-	a.usageWriter = w
+	a.errorWriter = w
 	return a
 }
 
@@ -245,6 +245,8 @@ func (a *Application) writeUsage(context *ParseContext, err error) {
 	}
 	if err != nil {
 		a.terminate(1)
+	} else {
+		a.terminate(0)
 	}
 }
 
@@ -412,6 +414,9 @@ func (a *Application) setDefaults(context *ParseContext) error {
 	flagElements := map[string]*ParseElement{}
 	for _, element := range context.Elements {
 		if flag, ok := element.Clause.(*FlagClause); ok {
+			if flag.name == "help" {
+				return nil
+			}
 			flagElements[flag.name] = element
 		}
 	}

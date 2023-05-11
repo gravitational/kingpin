@@ -1,4 +1,7 @@
-# Kingpin - A Go (golang) command line and flag parser [![](https://godoc.org/github.com/alecthomas/kingpin?status.svg)](http://godoc.org/github.com/alecthomas/kingpin) [![Build Status](https://travis-ci.org/alecthomas/kingpin.svg?branch=master)](https://travis-ci.org/alecthomas/kingpin)
+# Kingpin - A Go (golang) command line and flag parser
+[![](https://godoc.org/github.com/alecthomas/kingpin?status.svg)](http://godoc.org/github.com/alecthomas/kingpin) [![Build Status](https://travis-ci.org/alecthomas/kingpin.svg?branch=master)](https://travis-ci.org/alecthomas/kingpin) [![Gitter chat](https://badges.gitter.im/alecthomas.png)](https://gitter.im/alecthomas/Lobby)
+
+
 
 <!-- MarkdownTOC -->
 
@@ -219,7 +222,7 @@ Args:
   <ip>        IP address to ping.
   [<count>]   Number of packets to send
 $ ping 1.2.3.4 5
-Would ping: 1.2.3.4 with timeout 5s and count 0
+Would ping: 1.2.3.4 with timeout 5s and count 5
 ```
 
 From the following source:
@@ -243,8 +246,19 @@ var (
 func main() {
   kingpin.Version("0.0.1")
   kingpin.Parse()
-  fmt.Printf("Would ping: %s with timeout %s and count %d", *ip, *timeout, *count)
+  fmt.Printf("Would ping: %s with timeout %s and count %d\n", *ip, *timeout, *count)
 }
+```
+
+#### Reading arguments from a file
+Kingpin supports reading arguments from a file.
+Creat a file with the corresponding arguments:
+```
+echo -t=5\n > args
+```
+And now supply it:
+```
+$ ping @args
 ```
 
 ### Complex Example
@@ -384,7 +398,7 @@ func main() {
 
 Kingpin supports both flag and positional argument parsers for converting to
 Go types. For example, some included parsers are `Int()`, `Float()`,
-`Duration()` and `ExistingFile()`.
+`Duration()` and `ExistingFile()` (see [parsers.go](./parsers.go) for a complete list of included parsers).
 
 Parsers conform to Go's [`flag.Value`](http://godoc.org/flag#Value)
 interface, so any existing implementations will work.
@@ -412,7 +426,7 @@ As a convenience, I would recommend something like this:
 
 ```go
 func HTTPHeader(s Settings) (target *http.Header) {
-  target = new(http.Header)
+  target = &http.Header{}
   s.SetValue((*HTTPHeaderValue)(target))
   return
 }
@@ -458,7 +472,7 @@ Here are some examples of flags with various permutations:
 
     --name=NAME           // Flag(...).String()
     --name="Harry"        // Flag(...).Default("Harry").String()
-    --name=FULL-NAME      // flag(...).PlaceHolder("FULL-NAME").Default("Harry").String()
+    --name=FULL-NAME      // Flag(...).PlaceHolder("FULL-NAME").Default("Harry").String()
 
 ### Consuming all remaining arguments
 
@@ -511,35 +525,35 @@ ips := IPList(kingpin.Arg("ips", "IP addresses to ping."))
 
 ### Bash/ZSH Shell Completion
 
-By default, all flags and commands/subcommands generate completions 
+By default, all flags and commands/subcommands generate completions
 internally.
 
-Out of the box, CLI tools using kingpin should be able to take advantage 
-of completion hinting for flags and commands. By specifying 
-`--completion-bash` as the first argument, your CLI tool will show 
-possible subcommands. By ending your argv with `--`, hints for flags 
+Out of the box, CLI tools using kingpin should be able to take advantage
+of completion hinting for flags and commands. By specifying
+`--completion-bash` as the first argument, your CLI tool will show
+possible subcommands. By ending your argv with `--`, hints for flags
 will be shown.
 
-To allow your end users to take advantage you must package a 
-`/etc/bash_completion.d` script with your distribution (or the equivalent 
-for your target platform/shell). An alternative is to instruct your end 
+To allow your end users to take advantage you must package a
+`/etc/bash_completion.d` script with your distribution (or the equivalent
+for your target platform/shell). An alternative is to instruct your end
 user to source a script from their `bash_profile` (or equivalent).
 
 Fortunately Kingpin makes it easy to generate or source a script for use
-with end users shells. `./yourtool --completion-script-bash` and 
+with end users shells. `./yourtool --completion-script-bash` and
 `./yourtool --completion-script-zsh` will generate these scripts for you.
 
 **Installation by Package**
 
-For the best user experience, you should bundle your pre-created 
-completion script with your CLI tool and install it inside 
-`/etc/bash_completion.d` (or equivalent). A good suggestion is to add 
-this as an automated step to your build pipeline, in the implementation 
+For the best user experience, you should bundle your pre-created
+completion script with your CLI tool and install it inside
+`/etc/bash_completion.d` (or equivalent). A good suggestion is to add
+this as an automated step to your build pipeline, in the implementation
 is improved for bug fixed.
 
 **Installation by `bash_profile`**
 
-Alternatively, instruct your users to add an additional statement to 
+Alternatively, instruct your users to add an additional statement to
 their `bash_profile` (or equivalent):
 
 ```
@@ -555,13 +569,13 @@ eval "$(your-cli-tool --completion-script-zsh)"
 #### Additional API
 To provide more flexibility, a completion option API has been
 exposed for flags to allow user defined completion options, to extend
-completions further than just EnumVar/Enum. 
+completions further than just EnumVar/Enum.
 
 
 **Provide Static Options**
 
-When using an `Enum` or `EnumVar`, users are limited to only the options 
-given. Maybe we wish to hint possible options to the user, but also 
+When using an `Enum` or `EnumVar`, users are limited to only the options
+given. Maybe we wish to hint possible options to the user, but also
 allow them to provide their own custom option. `HintOptions` gives
 this functionality to flags.
 
@@ -574,11 +588,11 @@ app.Flag("port", "Provide a port to connect to").
 ```
 
 **Provide Dynamic Options**
-Consider the case that you needed to read a local database or a file to 
+Consider the case that you needed to read a local database or a file to
 provide suggestions. You can dynamically generate the options
 
 ```
-func listHosts(args []string) []string {
+func listHosts() []string {
   // Provide a dynamic list of hosts from a hosts file or otherwise
   // for bash completion. In this example we simply return static slice.
 
@@ -593,13 +607,13 @@ app.Flag("flag-1", "").HintAction(listHosts).String()
 
 **EnumVar/Enum**
 When using `Enum` or `EnumVar`, any provided options will be automatically
-used for bash autocompletion. However, if you wish to provide a subset or 
+used for bash autocompletion. However, if you wish to provide a subset or
 different options, you can use `HintOptions` or `HintAction` which will override
 the default completion options for `Enum`/`EnumVar`.
 
 
 **Examples**
-You can see an in depth example of the completion API within 
+You can see an in depth example of the completion API within
 `examples/completion/main.go`
 
 
