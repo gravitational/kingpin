@@ -143,7 +143,7 @@ func TestEmptyShortFlagIsAnError(t *testing.T) {
 
 func TestRequiredWithEnvarMissingErrors(t *testing.T) {
 	app := newTestApp()
-	app.Flag("t", "").OverrideDefaultFromEnvar("TEST_ENVAR").Required().Int()
+	app.Flag("t", "").Envar("TEST_ENVAR").Required().Int()
 	_, err := app.Parse([]string{})
 	assert.Error(t, err)
 }
@@ -365,4 +365,28 @@ func TestCombinationEnumOptions(t *testing.T) {
 	args = b.resolveCompletions()
 	assert.Equal(t, []string{"opt5", "opt6"}, args)
 
+}
+
+func TestIsSetByUser(t *testing.T) {
+	app := newTestApp()
+	var isSet bool
+	b := app.Flag("b", "").IsSetByUser(&isSet).Bool()
+	_, err := app.Parse([]string{"--b"})
+	assert.NoError(t, err)
+	assert.True(t, *b)
+	assert.True(t, isSet)
+
+	isSet = false
+	_, err = app.Parse([]string{"--no-b"})
+	assert.NoError(t, err)
+	assert.False(t, *b)
+	assert.True(t, isSet)
+
+	isSet2 := true
+	isSet = false
+	_ = app.Flag("b2", "").IsSetByUser(&isSet2).Bool()
+	_, err = app.Parse([]string{"--b", "--unknown"})
+	assert.Error(t, err)
+	assert.True(t, isSet)
+	assert.False(t, isSet2)
 }
