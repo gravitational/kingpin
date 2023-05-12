@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -62,4 +63,44 @@ func TestHiddenCommand(t *testing.T) {
 		assert.NotContains(t, usage, "hidden")
 		assert.Contains(t, usage, "visible")
 	}
+}
+
+func TestUsageFuncs(t *testing.T) {
+	var buf bytes.Buffer
+	a := New("test", "Test").Writer(&buf).Terminate(nil)
+	tpl := `{{ add 2 1 }}`
+	a.UsageTemplate(tpl)
+	a.UsageFuncs(template.FuncMap{
+		"add": func(x, y int) int { return x + y },
+	})
+	a.Parse([]string{"--help"})
+	usage := buf.String()
+	assert.Equal(t, "3", usage)
+}
+
+func TestCmdClause_HelpLong(t *testing.T) {
+	var buf bytes.Buffer
+	tpl := `{{define "FormatUsage"}}{{.HelpLong}}{{end -}}
+{{template "FormatUsage" .Context.SelectedCommand}}`
+
+	a := New("test", "Test").Writer(&buf).Terminate(nil)
+	a.UsageTemplate(tpl)
+	a.Command("command", "short help text").HelpLong("long help text")
+
+	a.Parse([]string{"command", "--help"})
+	usage := buf.String()
+	assert.Equal(t, "long help text", usage)
+}
+
+func TestArgEnvVar(t *testing.T) {
+	var buf bytes.Buffer
+
+	a := New("test", "Test").Writer(&buf).Terminate(nil)
+	a.Arg("arg", "Enable arg").Envar("ARG").String()
+	a.Flag("flag", "Enable flag").Envar("FLAG").String()
+
+	a.Parse([]string{"command", "--help"})
+	usage := buf.String()
+	assert.Contains(t, usage, "($ARG)")
+	assert.Contains(t, usage, "($FLAG)")
 }

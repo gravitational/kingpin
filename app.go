@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 var (
@@ -33,6 +34,7 @@ type Application struct {
 	errorWriter    io.Writer // Destination for errors.
 	usageWriter    io.Writer // Destination for usage
 	usageTemplate  string
+	usageFuncs     template.FuncMap
 	validator      ApplicationValidator
 	terminate      func(status int) // See Terminate()
 	allRepeatable  bool             // can all flags be repeated? default false, UNIX convention is true.
@@ -159,6 +161,12 @@ func (a *Application) UsageWriter(w io.Writer) *Application {
 // information. The default is UsageTemplate.
 func (a *Application) UsageTemplate(template string) *Application {
 	a.usageTemplate = template
+	return a
+}
+
+// UsageFuncs adds extra functions that can be used in the usage template.
+func (a *Application) UsageFuncs(funcs template.FuncMap) *Application {
+	a.usageFuncs = funcs
 	return a
 }
 
@@ -417,6 +425,10 @@ func (a *Application) setDefaults(context *ParseContext) error {
 			if flag.name == "help" {
 				return nil
 			}
+
+			if flag.name == "version" {
+				return nil
+			}
 			flagElements[flag.name] = element
 		}
 	}
@@ -533,11 +545,6 @@ func (a *Application) setValues(context *ParseContext) (selected []string, err e
 			}
 
 		case *CmdClause:
-			if clause.validator != nil {
-				if err = clause.validator(clause); err != nil {
-					return
-				}
-			}
 			selected = append(selected, clause.name)
 			lastCmd = clause
 		}
@@ -668,6 +675,10 @@ func (a *Application) completionOptions(context *ParseContext) []string {
 	}
 
 	if (currArg != "" && strings.HasPrefix(currArg, "--")) || strings.HasPrefix(prevArg, "--") {
+		if context.argsOnly {
+			return nil
+		}
+
 		// Perform completion for A flag. The last/current argument started with "-"
 		var (
 			flagName  string // The name of a flag if given (could be half complete)

@@ -1,6 +1,7 @@
 package kingpin
 
 import (
+	"errors"
 	"io/ioutil"
 
 	"github.com/stretchr/testify/assert"
@@ -427,6 +428,16 @@ func TestBashCompletionOptions(t *testing.T) {
 			Args:            "--completion-bash three arg1 arg2 arg3 arg4",
 			ExpectedOptions: []string(nil),
 		},
+		{
+			// After a -- argument, no more flags should be suggested
+			Args:            "--completion-bash three --flag-0 -- --",
+			ExpectedOptions: []string(nil),
+		},
+		{
+			// After a -- argument, argument options should still be suggested
+			Args:            "--completion-bash three -- arg1 ",
+			ExpectedOptions: []string{"arg-2-opt-1", "arg-2-opt-2"},
+		},
 	}
 
 	for _, c := range cases {
@@ -439,4 +450,36 @@ func TestBashCompletionOptions(t *testing.T) {
 		assert.Equal(t, c.ExpectedOptions, args, "Expected != Actual: [%v] != [%v]. \nInput was: [%v]", c.ExpectedOptions, args, c.Args)
 	}
 
+}
+
+func TestCmdValidation(t *testing.T) {
+	c := newTestApp()
+	cmd := c.Command("cmd", "")
+
+	var a, b string
+	cmd.Flag("a", "a").StringVar(&a)
+	cmd.Flag("b", "b").StringVar(&b)
+	cmd.Validate(func(*CmdClause) error {
+		if a == "" && b == "" {
+			return errors.New("must specify either a or b")
+		}
+		return nil
+	})
+
+	_, err := c.Parse([]string{"cmd"})
+	assert.Error(t, err)
+
+	_, err = c.Parse([]string{"cmd", "--a", "A"})
+	assert.NoError(t, err)
+}
+
+func TestVersion(t *testing.T) {
+	c := newTestApp()
+	c.Flag("config", "path to config file").Default("config.yaml").ExistingFile()
+	c.Version("1.0.0")
+
+	// the pre-action for version should be executed without running validation
+	// for ExistingFile
+	_, err := c.Parse([]string{"--version"})
+	assert.NoError(t, err)
 }

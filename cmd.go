@@ -36,8 +36,10 @@ ElementLoop:
 				if len(validOptions) == 0 {
 					// If there are no options for this argument,
 					// mark is as allSatisfied as we can't suggest anything
-					argsSatisfied++
-					allSatisfied = true
+					if !clause.consumesRemainder() {
+						argsSatisfied++
+						allSatisfied = true
+					}
 					continue ElementLoop
 				}
 
@@ -45,7 +47,9 @@ ElementLoop:
 					if opt == *el.Value {
 						// We have an exact match
 						// We don't need to suggest any option
-						argsSatisfied++
+						if !clause.consumesRemainder() {
+							argsSatisfied++
+						}
 						continue ElementLoop
 					}
 					if strings.HasPrefix(opt, *el.Value) {
@@ -54,8 +58,10 @@ ElementLoop:
 					}
 				}
 				// Avoid further completion as we have done everything we could
-				argsSatisfied++
-				allSatisfied = true
+				if !clause.consumesRemainder() {
+					argsSatisfied++
+					allSatisfied = true
+				}
 			}
 		case *CmdClause:
 			options = append(options, clause.completionAlts...)
@@ -228,6 +234,7 @@ type CmdClause struct {
 	name           string
 	aliases        []string
 	help           string
+	helpLong       string
 	isDefault      bool
 	validator      CmdClauseValidator
 	hidden         bool
@@ -303,6 +310,12 @@ func (c *CmdClause) PreAction(action Action) *CmdClause {
 	return c
 }
 
+// Help sets the help message.
+func (c *CmdClause) Help(help string) *CmdClause {
+	c.help = help
+	return c
+}
+
 func (c *CmdClause) init() error {
 	if err := c.flagGroup.init(c.app.defaultEnvarPrefix()); err != nil {
 		return err
@@ -321,5 +334,13 @@ func (c *CmdClause) init() error {
 
 func (c *CmdClause) Hidden() *CmdClause {
 	c.hidden = true
+	return c
+}
+
+// HelpLong adds a long help text, which can be used in usage templates.
+// For example, to use a longer help text in the command-specific help
+// than in the apps root help.
+func (c *CmdClause) HelpLong(help string) *CmdClause {
+	c.helpLong = help
 	return c
 }

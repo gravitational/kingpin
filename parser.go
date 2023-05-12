@@ -149,9 +149,7 @@ func (p *ParseContext) mergeFlags(flags *flagGroup) {
 }
 
 func (p *ParseContext) mergeArgs(args *argGroup) {
-	for _, arg := range args.args {
-		p.arguments.args = append(p.arguments.args, arg)
-	}
+	p.arguments.args = append(p.arguments.args, args.args...)
 }
 
 func (p *ParseContext) EOL() bool {
@@ -173,6 +171,10 @@ func (p *ParseContext) Next() *Token {
 		return &Token{Index: p.argi, Type: TokenEOL}
 	}
 
+	if p.argi > 0 && p.argi <= len(p.rawArgs) && p.rawArgs[p.argi-1] == "--" {
+		// If the previous argument was a --, from now on only arguments are parsed.
+		p.argsOnly = true
+	}
 	arg := p.args[0]
 	p.next()
 
@@ -180,9 +182,7 @@ func (p *ParseContext) Next() *Token {
 		return &Token{p.argi, TokenArg, arg}
 	}
 
-	// All remaining args are passed directly.
 	if arg == "--" {
-		p.argsOnly = true
 		return p.Next()
 	}
 
@@ -197,7 +197,7 @@ func (p *ParseContext) Next() *Token {
 
 	if strings.HasPrefix(arg, "-") {
 		if len(arg) == 1 {
-			return &Token{Index: p.argi, Type: TokenShort}
+			return &Token{Index: p.argi, Type: TokenArg}
 		}
 		shortRune, size := utf8.DecodeRuneInString(arg[1:])
 		short := string(shortRune)

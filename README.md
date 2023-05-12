@@ -1,5 +1,15 @@
+# CONTRIBUTIONS ONLY
+
+**What does this mean?** I do not have time to fix issues myself. The only way fixes or new features will be added is by people submitting PRs. If you are interested in taking over maintenance and have a history of contributions to Kingpin, please let me know.
+
+**Current status.** Kingpin is largely feature stable. There hasn't been a need to add new features in a while, but there are some bugs that should be fixed.
+
+**Why?** I no longer use Kingpin personally (I now use [kong](https://github.com/alecthomas/kong)). Rather than leave the project in a limbo of people filing issues and wondering why they're not being worked on, I believe this notice will more clearly set expectations.
+
 # Kingpin - A Go (golang) command line and flag parser
-[![](https://godoc.org/github.com/alecthomas/kingpin?status.svg)](http://godoc.org/github.com/alecthomas/kingpin) [![Build Status](https://travis-ci.org/alecthomas/kingpin.svg?branch=master)](https://travis-ci.org/alecthomas/kingpin) [![Gitter chat](https://badges.gitter.im/alecthomas.png)](https://gitter.im/alecthomas/Lobby)
+[![](https://godoc.org/github.com/alecthomas/kingpin?status.svg)](http://godoc.org/github.com/alecthomas/kingpin) [![CI](https://github.com/alecthomas/kingpin/actions/workflows/ci.yml/badge.svg)](https://github.com/alecthomas/kingpin/actions/workflows/ci.yml)
+
+
 
 
 
@@ -41,7 +51,7 @@ positional arguments.
 
 Install it with:
 
-    $ go get gopkg.in/alecthomas/kingpin.v2
+    $ go get github.com/alecthomas/kingpin/v2
 
 It looks like this:
 
@@ -116,16 +126,14 @@ be separated by a space. That is no longer the case.
 
 ## Versions
 
-Kingpin uses [gopkg.in](https://gopkg.in/alecthomas/kingpin) for versioning.
+The current stable version is [github.com/alecthomas/kingpin/v2](https://github.com/alecthomas/kingpin/v2). The previous version, [gopkg.in/alecthomas/kingpin.v1](https://gopkg.in/alecthomas/kingpin.v1), is deprecated and in maintenance mode.
 
-The current stable version is [gopkg.in/alecthomas/kingpin.v2](https://gopkg.in/alecthomas/kingpin.v2). The previous version, [gopkg.in/alecthomas/kingpin.v1](https://gopkg.in/alecthomas/kingpin.v1), is deprecated and in maintenance mode.
-
-### [V2](https://gopkg.in/alecthomas/kingpin.v2) is the current stable version
+### [V2](https://github.com/alecthomas/kingpin/v2) is the current stable version
 
 Installation:
 
 ```sh
-$ go get gopkg.in/alecthomas/kingpin.v2
+$ go get github.com/alecthomas/kingpin/v2
 ```
 
 ### [V1](https://gopkg.in/alecthomas/kingpin.v1) is the OLD stable version
@@ -233,12 +241,12 @@ package main
 import (
   "fmt"
 
-  "gopkg.in/alecthomas/kingpin.v2"
+  "github.com/alecthomas/kingpin/v2"
 )
 
 var (
   debug   = kingpin.Flag("debug", "Enable debug mode.").Bool()
-  timeout = kingpin.Flag("timeout", "Timeout waiting for ping.").Default("5s").OverrideDefaultFromEnvar("PING_TIMEOUT").Short('t').Duration()
+  timeout = kingpin.Flag("timeout", "Timeout waiting for ping.").Default("5s").Envar("PING_TIMEOUT").Short('t').Duration()
   ip      = kingpin.Arg("ip", "IP address to ping.").Required().IP()
   count   = kingpin.Arg("count", "Number of packets to send").Int()
 )
@@ -252,7 +260,7 @@ func main() {
 
 #### Reading arguments from a file
 Kingpin supports reading arguments from a file.
-Creat a file with the corresponding arguments:
+Create a file with the corresponding arguments:
 ```
 echo -t=5\n > args
 ```
@@ -311,7 +319,7 @@ package main
 import (
   "os"
   "strings"
-  "gopkg.in/alecthomas/kingpin.v2"
+  "github.com/alecthomas/kingpin/v2"
 )
 
 var (
@@ -388,8 +396,8 @@ var (
 
 func main() {
   switch kingpin.Parse() {
-  case "delete user":
-  case "delete post":
+  case deleteUserCommand.FullCommand():
+  case deletePostCommand.FullCommand():
   }
 }
 ```
@@ -641,7 +649,7 @@ func main() {
 
 Kingpin v2 supports templatised help using the text/template library (actually, [a fork](https://github.com/alecthomas/template)).
 
-You can specify the template to use with the [Application.UsageTemplate()](http://godoc.org/gopkg.in/alecthomas/kingpin.v2#Application.UsageTemplate) function.
+You can specify the template to use with the [Application.UsageTemplate()](http://godoc.org/github.com/alecthomas/kingpin/v2#Application.UsageTemplate) function.
 
 There are four included templates: `kingpin.DefaultUsageTemplate` is the default,
 `kingpin.CompactUsageTemplate` provides a more compact representation for more complex command-line structures,
