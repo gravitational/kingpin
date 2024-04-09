@@ -180,6 +180,12 @@ func (a *ArgClause) HintAction(action HintAction) *ArgClause {
 	return a
 }
 
+// HintActionWithData registers a HintActionWithData (function) for the flag to provide completions
+func (a *ArgClause) HintActionWithData(action HintActionWithData) *ArgClause {
+	a.addHintActionWithData(action)
+	return a
+}
+
 // HintOptions registers any number of options for the flag to provide completions
 func (a *ArgClause) HintOptions(options ...string) *ArgClause {
 	a.addHintAction(func() []string {

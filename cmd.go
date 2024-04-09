@@ -32,7 +32,10 @@ ElementLoop:
 
 			if el.Value != nil && *el.Value != "" {
 				// Get the list of valid options for the last argument
-				validOptions := c.argGroup.args[argsSatisfied].resolveCompletions()
+				validOptions := c.argGroup.args[argsSatisfied].resolveCompletionsWithData(*el.Value)
+
+				validOptions = append(validOptions, c.argGroup.args[argsSatisfied].resolveCompletions()...)
+
 				if len(validOptions) == 0 {
 					// If there are no options for this argument,
 					// mark is as allSatisfied as we can't suggest anything
@@ -72,6 +75,7 @@ ElementLoop:
 	if argsSatisfied < len(c.argGroup.args) && !allSatisfied {
 		// Since not all args have been satisfied, show options for the current one
 		options = append(options, c.argGroup.args[argsSatisfied].resolveCompletions()...)
+		options = append(options, c.argGroup.args[argsSatisfied].resolveCompletionsWithData("")...)
 	} else {
 		// If all args are satisfied, then go back to completing commands
 		for _, cmd := range c.cmdGroup.commandOrder {
