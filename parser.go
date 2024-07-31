@@ -143,6 +143,9 @@ func (p *ParseContext) mergeFlags(flags *flagGroup) {
 		if flag.shorthand != 0 {
 			p.flags.short[string(flag.shorthand)] = flag
 		}
+		if flag.inverseShorthand != 0 {
+			p.flags.invertShort[string(flag.inverseShorthand)] = flag
+		}
 		p.flags.long[flag.name] = flag
 		p.flags.flagOrder = append(p.flags.flagOrder, flag)
 	}

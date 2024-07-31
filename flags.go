@@ -6,15 +6,17 @@ import (
 )
 
 type flagGroup struct {
-	short     map[string]*FlagClause
-	long      map[string]*FlagClause
-	flagOrder []*FlagClause
+	short       map[string]*FlagClause
+	invertShort map[string]*FlagClause
+	long        map[string]*FlagClause
+	flagOrder   []*FlagClause
 }
 
 func newFlagGroup() *flagGroup {
 	return &flagGroup{
-		short: map[string]*FlagClause{},
-		long:  map[string]*FlagClause{},
+		short:       map[string]*FlagClause{},
+		invertShort: map[string]*FlagClause{},
+		long:        map[string]*FlagClause{},
 	}
 }
 
@@ -38,15 +40,20 @@ func (f *flagGroup) init(defaultEnvarPrefix string) error {
 	if err := f.checkDuplicates(); err != nil {
 		return err
 	}
-	for _, flag := range f.long {
+	for n, flag := range f.long {
 		if defaultEnvarPrefix != "" && !flag.noEnvar && flag.envar == "" {
 			flag.envar = envarTransform(defaultEnvarPrefix + "_" + flag.name)
 		}
 		if err := flag.init(); err != nil {
 			return err
 		}
+		fmt.Printf("--> n: %v: flag.shorthand: %v, flag.inverseShorthand: %v.\n", n, string(flag.shorthand), string(flag.inverseShorthand))
 		if flag.shorthand != 0 {
 			f.short[string(flag.shorthand)] = flag
+		}
+		if flag.inverseShorthand != 0 {
+			//	fmt.Printf("--> init: For %v, adding f.short: %v.\n", n, string(flag.inverseShorthand))
+			f.invertShort[string(flag.inverseShorthand)] = flag
 		}
 	}
 	return nil
@@ -59,6 +66,7 @@ func (f *flagGroup) checkDuplicates() error {
 		if flag.allowDuplicate {
 			continue
 		}
+		// TODO(russjones): Check dupes for inverse shorthand.
 		if flag.shorthand != 0 {
 			if _, ok := seenShort[flag.shorthand]; ok {
 				return fmt.Errorf("duplicate short flag -%c", flag.shorthand)
@@ -75,6 +83,8 @@ func (f *flagGroup) checkDuplicates() error {
 
 func (f *flagGroup) parse(context *ParseContext) (*FlagClause, error) {
 	var token *Token
+
+	//fmt.Printf("--> parse: context: %v\n", context.SelectedCommand)
 
 loop:
 	for {
@@ -105,8 +115,37 @@ loop:
 				}
 			} else {
 				flag, ok = f.short[name]
-				if !ok {
-					return nil, fmt.Errorf("unknown short flag '%s'", flagToken)
+				//if !ok {
+				//	return nil, fmt.Errorf("unknown short flag '%s'", flagToken)
+				//}
+
+				/*
+				   parse() {
+				     for {
+				       case TokenShort:
+				       if tokenLong {
+				          ...
+				       } else {
+				          // name = t or T
+				          flag, sok = f.short[name]
+				          flag, iok = f.ishort[name] {
+				               invert = true
+				          }
+
+				          if sok && iok {
+				             error("can't set short and invert short flags")
+				          }
+				          if !sok || !iok {
+				             error("flag not found")
+				          }
+
+				       }
+				     }
+				   }*/
+
+				if _, ok := f.invertShort[name]; ok {
+					flag = f.invertShort[name]
+					invert = true
 				}
 			}
 
@@ -117,8 +156,10 @@ loop:
 			fb, ok := flag.value.(boolFlag)
 			if ok && fb.IsBoolFlag() {
 				if invert {
+					fmt.Printf("--> parse: inverting, defaultValue: false.\n")
 					defaultValue = "false"
 				} else {
+					fmt.Printf("--> parse: not inverting, defaultValue: true.\n")
 					defaultValue = "true"
 				}
 			} else {
@@ -151,13 +192,14 @@ type FlagClause struct {
 	actionMixin
 	completionsMixin
 	envarMixin
-	name          string
-	shorthand     rune
-	help          string
-	defaultValues []string
-	placeholder   string
-	hidden        bool
-	setByUser     *bool
+	name             string
+	shorthand        rune
+	inverseShorthand rune
+	help             string
+	defaultValues    []string
+	placeholder      string
+	hidden           bool
+	setByUser        *bool
 
 	// allowDuplicate allows this flag to be repeated.
 	allowDuplicate bool
@@ -327,6 +369,13 @@ func (f *FlagClause) Required() *FlagClause {
 // Short sets the short flag name.
 func (f *FlagClause) Short(name rune) *FlagClause {
 	f.shorthand = name
+	return f
+}
+
+// InverseShort sets the inverseShorthand flag name.
+func (f *FlagClause) InverseShort(name rune) *FlagClause {
+	fmt.Printf("--> InverseShort: Adding in %v\n", name)
+	f.inverseShorthand = name
 	return f
 }
 
