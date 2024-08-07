@@ -6,17 +6,15 @@ import (
 )
 
 type flagGroup struct {
-	short       map[string]*FlagClause
-	invertShort map[string]*FlagClause
-	long        map[string]*FlagClause
-	flagOrder   []*FlagClause
+	short     map[string]*FlagClause
+	long      map[string]*FlagClause
+	flagOrder []*FlagClause
 }
 
 func newFlagGroup() *flagGroup {
 	return &flagGroup{
-		short:       map[string]*FlagClause{},
-		invertShort: map[string]*FlagClause{},
-		long:        map[string]*FlagClause{},
+		short: map[string]*FlagClause{},
+		long:  map[string]*FlagClause{},
 	}
 }
 
@@ -40,20 +38,19 @@ func (f *flagGroup) init(defaultEnvarPrefix string) error {
 	if err := f.checkDuplicates(); err != nil {
 		return err
 	}
-	for n, flag := range f.long {
+	for _, flag := range f.long {
 		if defaultEnvarPrefix != "" && !flag.noEnvar && flag.envar == "" {
 			flag.envar = envarTransform(defaultEnvarPrefix + "_" + flag.name)
 		}
 		if err := flag.init(); err != nil {
 			return err
 		}
-		fmt.Printf("--> n: %v: flag.shorthand: %v, flag.inverseShorthand: %v.\n", n, string(flag.shorthand), string(flag.inverseShorthand))
+		//fmt.Printf("--> n: %v: flag.shorthand: %v, flag.inverseShorthand: %v.\n", n, string(flag.shorthand), string(flag.inverseShorthand))
 		if flag.shorthand != 0 {
 			f.short[string(flag.shorthand)] = flag
 		}
 		if flag.inverseShorthand != 0 {
-			//	fmt.Printf("--> init: For %v, adding f.short: %v.\n", n, string(flag.inverseShorthand))
-			f.invertShort[string(flag.inverseShorthand)] = flag
+			f.short[string(flag.inverseShorthand)] = flag
 		}
 	}
 	return nil
@@ -66,12 +63,17 @@ func (f *flagGroup) checkDuplicates() error {
 		if flag.allowDuplicate {
 			continue
 		}
-		// TODO(russjones): Check dupes for inverse shorthand.
 		if flag.shorthand != 0 {
 			if _, ok := seenShort[flag.shorthand]; ok {
 				return fmt.Errorf("duplicate short flag -%c", flag.shorthand)
 			}
 			seenShort[flag.shorthand] = true
+		}
+		if flag.inverseShorthand != 0 {
+			if _, ok := seenShort[flag.inverseShorthand]; ok {
+				return fmt.Errorf("duplicate short flag -%c", flag.inverseShorthand)
+			}
+			seenShort[flag.inverseShorthand] = true
 		}
 		if _, ok := seenLong[flag.name]; ok {
 			return fmt.Errorf("duplicate long flag --%s", flag.name)
@@ -115,38 +117,18 @@ loop:
 				}
 			} else {
 				flag, ok = f.short[name]
-				//if !ok {
-				//	return nil, fmt.Errorf("unknown short flag '%s'", flagToken)
-				//}
+				if !ok {
+					return nil, fmt.Errorf("unknown short flag '%s'", flagToken)
+				}
 
-				/*
-				   parse() {
-				     for {
-				       case TokenShort:
-				       if tokenLong {
-				          ...
-				       } else {
-				          // name = t or T
-				          flag, sok = f.short[name]
-				          flag, iok = f.ishort[name] {
-				               invert = true
-				          }
-
-				          if sok && iok {
-				             error("can't set short and invert short flags")
-				          }
-				          if !sok || !iok {
-				             error("flag not found")
-				          }
-
-				       }
-				     }
-				   }*/
-
-				if _, ok := f.invertShort[name]; ok {
-					flag = f.invertShort[name]
+				switch {
+				case name == string(flag.shorthand):
+				case name == string(flag.inverseShorthand):
 					invert = true
 				}
+
+				//fmt.Printf("--> name: %v, flag.shorthand: %v, flag.inverseShorthand: %v.\n",
+				//	string(name), string(flag.shorthand), string(flag.inverseShorthand))
 			}
 
 			context.Next()
@@ -374,7 +356,6 @@ func (f *FlagClause) Short(name rune) *FlagClause {
 
 // InverseShort sets the inverseShorthand flag name.
 func (f *FlagClause) InverseShort(name rune) *FlagClause {
-	fmt.Printf("--> InverseShort: Adding in %v\n", name)
 	f.inverseShorthand = name
 	return f
 }
