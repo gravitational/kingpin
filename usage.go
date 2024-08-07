@@ -44,6 +44,7 @@ func formatTwoColumns(w io.Writer, indent, padding, width int, rows [][2]string)
 // appropriate help context, such as which command to show help for.
 func (a *Application) Usage(args []string) {
 	context, err := a.parseContext(true, args)
+	fmt.Printf("--> Usage: context: %v, err: %v\n", context, err)
 	a.FatalIfError(err, "")
 	if err := a.UsageForContextWithTemplate(context, 2, a.usageTemplate); err != nil {
 		panic(err)
@@ -121,6 +122,7 @@ func (a *Application) UsageForContext(context *ParseContext) error {
 
 // UsageForContextWithTemplate is the base usage function. You generally don't need to use this.
 func (a *Application) UsageForContextWithTemplate(context *ParseContext, indent int, tmpl string) error {
+	fmt.Printf("--> UsageForContextWithTemplate: 0\n")
 	shortFlagsPresent := func(f []*FlagModel) bool {
 		for _, flag := range f {
 			if flag.Short != 0 {
@@ -218,18 +220,25 @@ func (a *Application) UsageForContextWithTemplate(context *ParseContext, indent 
 			return string(c)
 		},
 	}
+	fmt.Printf("--> UsageForContextWithTemplate: 1\n")
 	for k, v := range a.usageFuncs {
 		funcs[k] = v
 	}
 
+	fmt.Printf("--> UsageForContextWithTemplate: 2\n")
 	t, err := template.New("usage").Funcs(funcs).Parse(tmpl)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("--> UsageForContextWithTemplate: 3: context: %v\n", context)
 	var selectedCommand *CmdModel
 	if context.SelectedCommand != nil {
+		fmt.Printf("--> UsageForContextWithTemplate: 3.5: context.SelectedCommand: %v.\n", context.SelectedCommand)
 		selectedCommand = context.SelectedCommand.Model()
 	}
+
+	fmt.Printf("--> context.flags: %v, context.arguments: %v, a: %v, width: %v\n", context.flags, context.arguments, a, width)
 	ctx := templateContext{
 		App:   a.Model(),
 		Width: width,
@@ -239,5 +248,6 @@ func (a *Application) UsageForContextWithTemplate(context *ParseContext, indent 
 			ArgGroupModel:   context.arguments.Model(),
 		},
 	}
+	fmt.Printf("--> UsageForContextWithTemplate: 4\n")
 	return t.Execute(a.usageWriter, ctx)
 }

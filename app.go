@@ -640,12 +640,15 @@ func (a *Application) FatalUsageContext(context *ParseContext, format string, ar
 // FatalIfError prints an error and exits if err is not nil. The error is printed
 // with the given formatted string, if any.
 func (a *Application) FatalIfError(err error, format string, args ...interface{}) {
+	fmt.Printf("--> FatalIfError: before: %v\n", err)
 	if err != nil {
+		fmt.Printf("--> FatalIfError: after: %v\n", err)
 		prefix := ""
 		if format != "" {
 			prefix = fmt.Sprintf(format, args...) + ": "
 		}
 		a.Errorf(prefix+"%s", err)
+		fmt.Printf("--> a.terminate: %v\n", a.terminate)
 		a.terminate(1)
 	}
 }
