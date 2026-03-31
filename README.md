@@ -647,16 +647,25 @@ func main() {
 
 ### Custom help
 
-Kingpin v2 supports templatised help using the text/template library (actually, [a fork](https://github.com/alecthomas/template)).
+Kingpin v2 supports custom help output via programmatic renderers or text/templates.
 
-You can specify the template to use with the [Application.UsageTemplate()](http://godoc.org/github.com/alecthomas/kingpin/v2#Application.UsageTemplate) function.
+The default renderer is `kingpin.RenderDefault`. You can replace it with a custom function
+using [Application.UsageRenderer()](http://godoc.org/github.com/alecthomas/kingpin/v2#Application.UsageRenderer),
+which only affects the primary `--help` output. Hidden flags (`--help-long`, `--help-man`,
+completion scripts) always use their built-in renderers.
 
-There are four included templates: `kingpin.DefaultUsageTemplate` is the default,
-`kingpin.CompactUsageTemplate` provides a more compact representation for more complex command-line structures,
-`kingpin.SeparateOptionalFlagsUsageTemplate` looks like the default template, but splits required
-and optional command flags into separate lists, and `kingpin.ManPageTemplate` is used to generate man pages.
+There are several built-in renderers: `kingpin.RenderDefault`, `kingpin.RenderCompact`
+(a more compact representation for complex command-line structures),
+`kingpin.RenderSeparateOptionalFlags` (splits required and optional flags into separate lists),
+`kingpin.RenderManPage` (generates man pages), and `kingpin.RenderLongHelp` (verbose help with per-command flags).
 
-See the above templates for examples of usage, and the the function [UsageForContextWithTemplate()](https://github.com/alecthomas/kingpin/blob/master/usage.go#L198) method for details on the context.
+For backward compatibility, custom text/template strings can still be used via
+[Application.UsageTemplate()](http://godoc.org/github.com/alecthomas/kingpin/v2#Application.UsageTemplate),
+which takes precedence over `UsageRenderer()`. Custom template helper functions can be
+registered with [Application.UsageFuncs()](http://godoc.org/github.com/alecthomas/kingpin/v2#Application.UsageFuncs).
+
+Caution should be taken when using templates over renderers. Doing so will prevent Dead Code Elimination in your project
+which can lead to increased binary size.
 
 #### Default help template
 
