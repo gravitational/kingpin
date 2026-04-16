@@ -4,9 +4,9 @@ go 1.19
 
 replace github.com/alecthomas/kingpin/v2 => ../
 
-require github.com/alecthomas/kingpin/v2 v2.0.0-00010101000000-000000000000
+require github.com/alecthomas/kingpin/v2 v2.4.0
 
 require (
-	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
-	github.com/xhit/go-str2duration v1.2.0 // indirect
+	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
+	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 )

@@ -260,3 +260,15 @@ if [[ "$(basename -- ${(%):-%x})" != "_{{.App.Name}}" ]]; then
     compdef _{{.App.Name}} {{.App.Name}}
 fi
 `
+
+var FishCompletionTemplate = `complete -c {{.App.Name}} -f -a '(
+    set -l tokens (commandline -xpc)
+    set -l current (commandline -ct)
+    set -l completions ({{.App.Name}} --completion-bash $tokens[2..] $current)
+    if test -n "$completions"
+        printf "%s\n" $completions
+    else
+        __fish_complete_path $current
+    end
+)'
+`
