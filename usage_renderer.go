@@ -325,7 +325,9 @@ func RenderManPage(w io.Writer, ctx *UsageContext) error {
 				fmt.Fprintf(w, "=%s", flag.FormatPlaceHolder())
 			}
 			fmt.Fprintln(w, `\fR`)
-			fmt.Fprintln(w, flag.Help)
+			help := flag.Help
+			help = appendEnumHelp(help, flag.Value)
+			fmt.Fprintln(w, help)
 		}
 	}
 
@@ -486,6 +488,32 @@ func RenderFishCompletion(w io.Writer, ctx *UsageContext) error {
 	return nil
 }
 
+// enumLabel returns "one of" for a single-value enum and "any of" for a
+// multi-value (cumulative) enum.
+func enumLabel(v Value) string {
+	if r, ok := v.(repeatableFlag); ok && r.IsCumulative() {
+		return "any of"
+	}
+	return "one of"
+}
+
+func getOptions(value Value) []string {
+	if e, ok := value.(enumOptions); ok {
+		return e.EnumOptions()
+	}
+	return nil
+}
+
+// appendEnumHelp appends "(one of: a, b)" or "(any of: a, b)" to help if v
+// implements enumOptions and has at least one option. Returns help unchanged
+// when v is not an enum or has no options.
+func appendEnumHelp(help string, v Value) string {
+	if options := getOptions(v); len(options) > 0 {
+		return help + fmt.Sprintf(" (%s: %s)", enumLabel(v), strings.Join(options, ", "))
+	}
+	return help
+}
+
 // FlagsToTwoColumns converts a slice of flags into two-column row data
 // suitable for FormatTwoColumns. Hidden flags are excluded.
 func FlagsToTwoColumns(f []*FlagModel) [][2]string {
@@ -493,7 +521,10 @@ func FlagsToTwoColumns(f []*FlagModel) [][2]string {
 	haveShort := ShortFlagsPresent(f)
 	for _, flag := range f {
 		if !flag.Hidden {
-			rows = append(rows, [2]string{FormatFlag(haveShort, flag), flag.HelpWithEnvar()})
+			help := flag.HelpWithEnvar()
+			// Add enum options to help text if this is an enum
+			help = appendEnumHelp(help, flag.Value)
+			rows = append(rows, [2]string{FormatFlag(haveShort, flag), help})
 		}
 	}
 	return rows
@@ -515,7 +546,8 @@ func ArgsToTwoColumns(a []*ArgModel) [][2]string {
 		if !arg.Required {
 			s = "[" + s + "]"
 		}
-		rows = append(rows, [2]string{s, arg.HelpWithEnvar()})
+		help := appendEnumHelp(arg.HelpWithEnvar(), arg.Value)
+		rows = append(rows, [2]string{s, help})
 	}
 	return rows
 }

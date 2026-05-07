@@ -42,7 +42,7 @@ func templateRenderFunc(a *Application, context *ParseContext, indent int, tmpl 
 			haveShort := ShortFlagsPresent(f)
 			for _, flag := range f {
 				if !flag.Hidden {
-					rows = append(rows, [2]string{FormatFlagCompact(haveShort, flag), flag.Help})
+					rows = append(rows, [2]string{FormatFlagCompact(haveShort, flag), appendEnumHelp(flag.Help, flag.Value)})
 				}
 			}
 			return rows
@@ -82,6 +82,9 @@ func templateRenderFunc(a *Application, context *ParseContext, indent int, tmpl 
 		"IsCumulative": func(value Value) bool {
 			r, ok := value.(repeatableFlag)
 			return ok && r.IsCumulative()
+		},
+		"EnumOptions": func(value Value) []string {
+			return getOptions(value)
 		},
 		"Char": func(c rune) string {
 			return string(c)

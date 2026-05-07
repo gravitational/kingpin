@@ -58,6 +58,11 @@ type repeatableFlag interface {
 	IsCumulative() bool
 }
 
+// Optional interface for enum values that have a set of valid options.
+type enumOptions interface {
+	EnumOptions() []string
+}
+
 // Text is the interface to the dynamic value stored in a flag.
 // (The default value is represented as a string.)
 type Text interface {
@@ -87,9 +92,10 @@ type accumulator struct {
 // Use reflection to accumulate values into a slice.
 //
 // target := []string{}
-// newAccumulator(&target, func (value interface{}) Value {
-//   return newStringValue(value.(*string))
-// })
+//
+//	newAccumulator(&target, func (value interface{}) Value {
+//	  return newStringValue(value.(*string))
+//	})
 func newAccumulator(slice interface{}, element func(value interface{}) Value) *accumulator {
 	typ := reflect.TypeOf(slice)
 	if typ.Kind() != reflect.Ptr || typ.Elem().Kind() != reflect.Slice {
@@ -386,6 +392,10 @@ func (e *enumValue) Get() interface{} {
 	return (string)(*e.value)
 }
 
+func (e *enumValue) EnumOptions() []string {
+	return e.options
+}
+
 // -- []string Enum Value
 type enumsValue struct {
 	value   *[]string
@@ -419,6 +429,10 @@ func (s *enumsValue) String() string {
 
 func (s *enumsValue) IsCumulative() bool {
 	return true
+}
+
+func (e *enumsValue) EnumOptions() []string {
+	return e.options
 }
 
 // -- units.Base2Bytes Value

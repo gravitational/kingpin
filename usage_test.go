@@ -354,3 +354,320 @@ func TestRenderersMatchTemplates(t *testing.T) {
 		}
 	}
 }
+
+func TestEnumFlagRendering(t *testing.T) {
+	tests := []struct {
+		name     string
+		renderer UsageRenderer
+		template string
+	}{
+		{
+			name:     "default template",
+			template: DefaultUsageTemplate,
+		},
+		{
+			name:     "default renderer",
+			renderer: RenderDefault,
+		},
+		{
+			name:     "compact template",
+			template: CompactUsageTemplate,
+		},
+		{
+			name:     "compact renderer",
+			renderer: RenderCompact,
+		},
+		{
+			name:     "separate optional flags template",
+			template: SeparateOptionalFlagsUsageTemplate,
+		},
+		{
+			name:     "separate optional flags renderer",
+			renderer: RenderSeparateOptionalFlags,
+		},
+		{
+			name:     "long help template",
+			template: LongHelpTemplate,
+		},
+		{
+			name:     "long help renderer",
+			renderer: RenderLongHelp,
+		},
+		{
+			name:     "man page renderer",
+			renderer: RenderManPage,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			a := New("test", "Test enum flags").Writer(&buf).Terminate(nil)
+			a.Flag("format", "Output format").Default("json").Enum("json", "yaml", "xml")
+			a.Flag("level", "Log level").Enum("debug", "info", "warn", "error")
+
+			if tt.template != "" {
+				a.UsageTemplate(tt.template)
+			}
+			if tt.renderer != nil {
+				a.UsageRenderer(tt.renderer)
+			}
+
+			_, err := a.Parse([]string{"--help"})
+			require.NoError(t, err)
+			usage := buf.String()
+
+			assert.Contains(t, usage, "one of: json, yaml, xml")
+			assert.Contains(t, usage, "one of: debug, info, warn, error")
+		})
+	}
+}
+
+func TestEnumArgRendering(t *testing.T) {
+	tests := []struct {
+		name     string
+		renderer UsageRenderer
+		template string
+	}{
+		{
+			name:     "default template",
+			template: DefaultUsageTemplate,
+		},
+		{
+			name:     "default renderer",
+			renderer: RenderDefault,
+		},
+		{
+			name:     "compact template",
+			template: CompactUsageTemplate,
+		},
+		{
+			name:     "compact renderer",
+			renderer: RenderCompact,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			a := New("test", "Test enum args").Writer(&buf).Terminate(nil)
+			a.Arg("action", "Action to perform").Required().Enum("create", "read", "update", "delete")
+			a.Arg("format", "Output format").Enum("json", "yaml", "xml")
+
+			if tt.template != "" {
+				a.UsageTemplate(tt.template)
+			}
+			if tt.renderer != nil {
+				a.UsageRenderer(tt.renderer)
+			}
+
+			// Parse with a valid action to avoid required arg error
+			ctx, err := a.ParseContext([]string{"create", "--help"})
+			require.NoError(t, err)
+
+			if tt.template != "" {
+				err = a.UsageForContextWithTemplate(ctx, 2, tt.template)
+			} else {
+				err = a.usageForContextWithUsageRenderer(ctx, 2, tt.renderer)
+			}
+			require.NoError(t, err)
+			usage := buf.String()
+
+			assert.Contains(t, usage, "one of: create, read, update, delete")
+			assert.Contains(t, usage, "one of: json, yaml, xml")
+		})
+	}
+}
+
+func TestEnumMultiValueRendering(t *testing.T) {
+	tests := []struct {
+		name     string
+		renderer UsageRenderer
+		template string
+	}{
+		{
+			name:     "default template",
+			template: DefaultUsageTemplate,
+		},
+		{
+			name:     "default renderer",
+			renderer: RenderDefault,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			a := New("test", "Test multi-value enums").Writer(&buf).Terminate(nil)
+			a.Flag("feature", "Enable features (repeatable)").Enums("auth", "logging", "metrics", "tracing")
+			a.Arg("tags", "Tags to apply (repeatable)").Enums("dev", "prod", "staging", "test")
+
+			if tt.template != "" {
+				a.UsageTemplate(tt.template)
+			}
+			if tt.renderer != nil {
+				a.UsageRenderer(tt.renderer)
+			}
+
+			_, err := a.Parse([]string{"--help"})
+			require.NoError(t, err)
+			usage := buf.String()
+
+			// Enum values may wrap across lines in the output
+			assert.Contains(t, usage, "auth")
+			assert.Contains(t, usage, "logging")
+			assert.Contains(t, usage, "metrics")
+			assert.Contains(t, usage, "tracing")
+			assert.Contains(t, usage, "dev")
+			assert.Contains(t, usage, "prod")
+			assert.Contains(t, usage, "staging")
+			assert.Contains(t, usage, "test")
+		})
+	}
+}
+
+func TestEnumWithCommand(t *testing.T) {
+	var buf bytes.Buffer
+	a := New("test", "Test with commands").Writer(&buf).Terminate(nil)
+
+	cmd := a.Command("deploy", "Deploy application")
+	cmd.Flag("env", "Environment").Default("dev").Enum("dev", "staging", "prod")
+	cmd.Arg("region", "AWS region").Required().Enum("us-east-1", "us-west-2", "eu-west-1")
+
+	// Parse with valid region to avoid required arg error
+	ctx, err := a.ParseContext([]string{"deploy", "us-east-1", "--help"})
+	require.NoError(t, err)
+
+	err = a.UsageForContext(ctx)
+	require.NoError(t, err)
+	usage := buf.String()
+
+	assert.Contains(t, usage, "one of: dev, staging, prod")
+	assert.Contains(t, usage, "one of: us-east-1, us-west-2, eu-west-1")
+}
+
+func TestEnumOptionsTemplateFunction(t *testing.T) {
+	var buf bytes.Buffer
+	a := New("test", "Test").Writer(&buf).Terminate(nil)
+	a.Flag("format", "Output format").Enum("json", "yaml", "xml")
+
+	// Use custom template that uses EnumOptions function
+	tmpl := `{{ range .Context.Flags }}{{ if EnumOptions .Value }}Options: {{ range EnumOptions .Value }}{{ . }} {{ end }}{{ end }}{{ end }}`
+	a.UsageTemplate(tmpl)
+
+	_, err := a.Parse([]string{"--help"})
+	require.NoError(t, err)
+	usage := buf.String()
+
+	assert.Contains(t, usage, "Options: json yaml xml")
+}
+
+func TestEnumWithEnvar(t *testing.T) {
+	var buf bytes.Buffer
+	a := New("test", "Test").Writer(&buf).Terminate(nil)
+	a.Flag("format", "Output format").Envar("FORMAT").Enum("json", "yaml", "xml")
+	a.Arg("level", "Log level").Envar("LEVEL").Enum("debug", "info", "warn")
+
+	_, err := a.Parse([]string{"--help"})
+	require.NoError(t, err)
+	usage := buf.String()
+
+	assert.Contains(t, usage, "$FORMAT")
+	assert.Contains(t, usage, "one of: json, yaml, xml")
+	assert.Contains(t, usage, "$LEVEL")
+	assert.Contains(t, usage, "one of: debug, info, warn")
+}
+
+func TestFlagsToTwoColumnsWithEnums(t *testing.T) {
+	flags := []*FlagModel{
+		{
+			Name:  "format",
+			Help:  "Output format",
+			Value: newEnumFlag(new(string), "json", "yaml", "xml"),
+		},
+		{
+			Name:  "verbose",
+			Help:  "Verbose output",
+			Value: newBoolValue(new(bool)),
+		},
+	}
+
+	rows := FlagsToTwoColumns(flags)
+	require.Len(t, rows, 2)
+
+	// First row should have enum values
+	assert.Contains(t, rows[0][1], "Output format")
+	assert.Contains(t, rows[0][1], "(one of: json, yaml, xml)")
+
+	// Second row should not have enum values
+	assert.Equal(t, "Verbose output", rows[1][1])
+	assert.NotContains(t, rows[1][1], "(one of:")
+}
+
+func TestArgsToTwoColumnsWithEnums(t *testing.T) {
+	args := []*ArgModel{
+		{
+			Name:     "action",
+			Help:     "Action to perform",
+			Required: true,
+			Value:    newEnumFlag(new(string), "create", "delete", "update"),
+		},
+		{
+			Name:     "file",
+			Help:     "File to process",
+			Required: false,
+			Value:    newStringValue(new(string)),
+		},
+	}
+
+	rows := ArgsToTwoColumns(args)
+	require.Len(t, rows, 2)
+
+	// First row should have enum values
+	assert.Contains(t, rows[0][1], "Action to perform")
+	assert.Contains(t, rows[0][1], "(one of: create, delete, update)")
+
+	// Second row should not have enum values
+	assert.Equal(t, "File to process", rows[1][1])
+	assert.NotContains(t, rows[1][1], "(one of:")
+}
+
+func TestAppendEnumHelp(t *testing.T) {
+	tests := []struct {
+		name string
+		help string
+		v    Value
+		want string
+	}{
+		{
+			name: "single enum appends one of",
+			help: "Output format",
+			v:    newEnumFlag(new(string), "json", "yaml", "xml"),
+			want: "Output format (one of: json, yaml, xml)",
+		},
+		{
+			name: "multi enum appends any of",
+			help: "Log levels",
+			v:    newEnumsFlag(new([]string), "debug", "info", "warn"),
+			want: "Log levels (any of: debug, info, warn)",
+		},
+		{
+			name: "non-enum value is unchanged",
+			help: "Verbose output",
+			v:    newBoolValue(new(bool)),
+			want: "Verbose output",
+		},
+		{
+			name: "empty help string",
+			help: "",
+			v:    newEnumFlag(new(string), "a", "b"),
+			want: " (one of: a, b)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, appendEnumHelp(tt.help, tt.v))
+		})
+	}
+}
