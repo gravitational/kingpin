@@ -631,3 +631,43 @@ func TestArgsToTwoColumnsWithEnums(t *testing.T) {
 	assert.Equal(t, "File to process", rows[1][1])
 	assert.NotContains(t, rows[1][1], "(one of:")
 }
+
+func TestAppendEnumHelp(t *testing.T) {
+	tests := []struct {
+		name string
+		help string
+		v    Value
+		want string
+	}{
+		{
+			name: "single enum appends one of",
+			help: "Output format",
+			v:    newEnumFlag(new(string), "json", "yaml", "xml"),
+			want: "Output format (one of: json, yaml, xml)",
+		},
+		{
+			name: "multi enum appends any of",
+			help: "Log levels",
+			v:    newEnumsFlag(new([]string), "debug", "info", "warn"),
+			want: "Log levels (any of: debug, info, warn)",
+		},
+		{
+			name: "non-enum value is unchanged",
+			help: "Verbose output",
+			v:    newBoolValue(new(bool)),
+			want: "Verbose output",
+		},
+		{
+			name: "empty help string",
+			help: "",
+			v:    newEnumFlag(new(string), "a", "b"),
+			want: " (one of: a, b)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, appendEnumHelp(tt.help, tt.v))
+		})
+	}
+}
