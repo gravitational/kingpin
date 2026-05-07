@@ -329,7 +329,7 @@ func RenderManPage(w io.Writer, ctx *UsageContext) error {
 			// Add enum options to help text if this is an enum
 			if e, ok := flag.Value.(enumOptions); ok {
 				if options := e.EnumOptions(); len(options) > 0 {
-					help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+					help += fmt.Sprintf(" (%s: %s)", enumLabel(flag.Value), strings.Join(options, ", "))
 				}
 			}
 			fmt.Fprintln(w, help)
@@ -493,6 +493,15 @@ func RenderFishCompletion(w io.Writer, ctx *UsageContext) error {
 	return nil
 }
 
+// enumLabel returns "one of" for a single-value enum and "any of" for a
+// multi-value (cumulative) enum.
+func enumLabel(v Value) string {
+	if r, ok := v.(repeatableFlag); ok && r.IsCumulative() {
+		return "any of"
+	}
+	return "one of"
+}
+
 // FlagsToTwoColumns converts a slice of flags into two-column row data
 // suitable for FormatTwoColumns. Hidden flags are excluded.
 func FlagsToTwoColumns(f []*FlagModel) [][2]string {
@@ -504,7 +513,7 @@ func FlagsToTwoColumns(f []*FlagModel) [][2]string {
 			// Add enum options to help text if this is an enum
 			if e, ok := flag.Value.(enumOptions); ok {
 				if options := e.EnumOptions(); len(options) > 0 {
-					help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+					help += fmt.Sprintf(" (%s: %s)", enumLabel(flag.Value), strings.Join(options, ", "))
 				}
 			}
 			rows = append(rows, [2]string{FormatFlag(haveShort, flag), help})
@@ -531,9 +540,9 @@ func ArgsToTwoColumns(a []*ArgModel) [][2]string {
 		}
 		help := arg.HelpWithEnvar()
 		// Add enum options to help text if this is an enum
-		if e, ok := arg.Value.(interface{ EnumOptions() []string }); ok {
+		if e, ok := arg.Value.(enumOptions); ok {
 			if options := e.EnumOptions(); len(options) > 0 {
-				help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+				help += fmt.Sprintf(" (%s: %s)", enumLabel(arg.Value), strings.Join(options, ", "))
 			}
 		}
 		rows = append(rows, [2]string{s, help})

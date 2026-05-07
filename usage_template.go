@@ -47,7 +47,7 @@ func templateRenderFunc(a *Application, context *ParseContext, indent int, tmpl 
 					// Add enum options to help text if this is an enum
 					if e, ok := flag.Value.(enumOptions); ok {
 						if options := e.EnumOptions(); len(options) > 0 {
-							help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+							help += fmt.Sprintf(" (%s: %s)", enumLabel(flag.Value), strings.Join(options, ", "))
 						}
 					}
 					rows = append(rows, [2]string{FormatFlagCompact(haveShort, flag), help})

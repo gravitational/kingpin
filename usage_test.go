@@ -417,8 +417,8 @@ func TestEnumFlagRendering(t *testing.T) {
 			require.NoError(t, err)
 			usage := buf.String()
 
-			assert.Contains(t, usage, "json, yaml, xml")
-			assert.Contains(t, usage, "debug, info, warn, error")
+			assert.Contains(t, usage, "one of: json, yaml, xml")
+			assert.Contains(t, usage, "one of: debug, info, warn, error")
 		})
 	}
 }
@@ -473,8 +473,8 @@ func TestEnumArgRendering(t *testing.T) {
 			require.NoError(t, err)
 			usage := buf.String()
 
-			assert.Contains(t, usage, "create, read, update, delete")
-			assert.Contains(t, usage, "json, yaml, xml")
+			assert.Contains(t, usage, "one of: create, read, update, delete")
+			assert.Contains(t, usage, "one of: json, yaml, xml")
 		})
 	}
 }
@@ -542,8 +542,8 @@ func TestEnumWithCommand(t *testing.T) {
 	require.NoError(t, err)
 	usage := buf.String()
 
-	assert.Contains(t, usage, "dev, staging, prod")
-	assert.Contains(t, usage, "us-east-1, us-west-2, eu-west-1")
+	assert.Contains(t, usage, "one of: dev, staging, prod")
+	assert.Contains(t, usage, "one of: us-east-1, us-west-2, eu-west-1")
 }
 
 func TestEnumOptionsTemplateFunction(t *testing.T) {
@@ -573,9 +573,9 @@ func TestEnumWithEnvar(t *testing.T) {
 	usage := buf.String()
 
 	assert.Contains(t, usage, "$FORMAT")
-	assert.Contains(t, usage, "json, yaml, xml")
+	assert.Contains(t, usage, "one of: json, yaml, xml")
 	assert.Contains(t, usage, "$LEVEL")
-	assert.Contains(t, usage, "debug, info, warn")
+	assert.Contains(t, usage, "one of: debug, info, warn")
 }
 
 func TestFlagsToTwoColumnsWithEnums(t *testing.T) {
@@ -597,11 +597,11 @@ func TestFlagsToTwoColumnsWithEnums(t *testing.T) {
 
 	// First row should have enum values
 	assert.Contains(t, rows[0][1], "Output format")
-	assert.Contains(t, rows[0][1], "(valid: json, yaml, xml)")
+	assert.Contains(t, rows[0][1], "(one of: json, yaml, xml)")
 
 	// Second row should not have enum values
 	assert.Equal(t, "Verbose output", rows[1][1])
-	assert.NotContains(t, rows[1][1], "(valid:")
+	assert.NotContains(t, rows[1][1], "(one of:")
 }
 
 func TestArgsToTwoColumnsWithEnums(t *testing.T) {
@@ -625,9 +625,9 @@ func TestArgsToTwoColumnsWithEnums(t *testing.T) {
 
 	// First row should have enum values
 	assert.Contains(t, rows[0][1], "Action to perform")
-	assert.Contains(t, rows[0][1], "(valid: create, delete, update)")
+	assert.Contains(t, rows[0][1], "(one of: create, delete, update)")
 
 	// Second row should not have enum values
 	assert.Equal(t, "File to process", rows[1][1])
-	assert.NotContains(t, rows[1][1], "(valid:")
+	assert.NotContains(t, rows[1][1], "(one of:")
 }
