@@ -2,6 +2,7 @@ package kingpin
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -42,7 +43,14 @@ func templateRenderFunc(a *Application, context *ParseContext, indent int, tmpl 
 			haveShort := ShortFlagsPresent(f)
 			for _, flag := range f {
 				if !flag.Hidden {
-					rows = append(rows, [2]string{FormatFlagCompact(haveShort, flag), flag.Help})
+					help := flag.Help
+					// Add enum options to help text if this is an enum
+					if e, ok := flag.Value.(enumOptions); ok {
+						if options := e.EnumOptions(); len(options) > 0 {
+							help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+						}
+					}
+					rows = append(rows, [2]string{FormatFlagCompact(haveShort, flag), help})
 				}
 			}
 			return rows
@@ -82,6 +90,12 @@ func templateRenderFunc(a *Application, context *ParseContext, indent int, tmpl 
 		"IsCumulative": func(value Value) bool {
 			r, ok := value.(repeatableFlag)
 			return ok && r.IsCumulative()
+		},
+		"EnumOptions": func(value Value) []string {
+			if e, ok := value.(enumOptions); ok {
+				return e.EnumOptions()
+			}
+			return nil
 		},
 		"Char": func(c rune) string {
 			return string(c)

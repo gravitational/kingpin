@@ -325,7 +325,14 @@ func RenderManPage(w io.Writer, ctx *UsageContext) error {
 				fmt.Fprintf(w, "=%s", flag.FormatPlaceHolder())
 			}
 			fmt.Fprintln(w, `\fR`)
-			fmt.Fprintln(w, flag.Help)
+			help := flag.Help
+			// Add enum options to help text if this is an enum
+			if e, ok := flag.Value.(enumOptions); ok {
+				if options := e.EnumOptions(); len(options) > 0 {
+					help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+				}
+			}
+			fmt.Fprintln(w, help)
 		}
 	}
 
@@ -493,7 +500,14 @@ func FlagsToTwoColumns(f []*FlagModel) [][2]string {
 	haveShort := ShortFlagsPresent(f)
 	for _, flag := range f {
 		if !flag.Hidden {
-			rows = append(rows, [2]string{FormatFlag(haveShort, flag), flag.HelpWithEnvar()})
+			help := flag.HelpWithEnvar()
+			// Add enum options to help text if this is an enum
+			if e, ok := flag.Value.(enumOptions); ok {
+				if options := e.EnumOptions(); len(options) > 0 {
+					help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+				}
+			}
+			rows = append(rows, [2]string{FormatFlag(haveShort, flag), help})
 		}
 	}
 	return rows
@@ -515,7 +529,14 @@ func ArgsToTwoColumns(a []*ArgModel) [][2]string {
 		if !arg.Required {
 			s = "[" + s + "]"
 		}
-		rows = append(rows, [2]string{s, arg.HelpWithEnvar()})
+		help := arg.HelpWithEnvar()
+		// Add enum options to help text if this is an enum
+		if e, ok := arg.Value.(interface{ EnumOptions() []string }); ok {
+			if options := e.EnumOptions(); len(options) > 0 {
+				help += fmt.Sprintf(" (valid: %s)", strings.Join(options, ", "))
+			}
+		}
+		rows = append(rows, [2]string{s, help})
 	}
 	return rows
 }
